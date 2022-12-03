@@ -49,18 +49,18 @@ class MianApp(tk.Tk):
         self.login()
 
     def login(self):
-
         window = loginApp(self,self.logindatas, self.get_logindatas)
+        window.attributes('-topmost', True)
         window.grab_set()
 
-
+    # get logindatas and login onlinejudge
     def get_logindatas(self,logindatas):
         self.logindatas = logindatas
         print(f'MianApp: {self.logindatas}')
 
         url = "https://onlinejudge.org/index.php?option=com_comprofiler&task=login"
         res = self.session.post(url, data=self.logindatas)
-        self.chech_login(res.text)
+        self.check_login(res.text)
 
     # get headers
     def get_headers(self):
@@ -81,7 +81,7 @@ class MianApp(tk.Tk):
                 self.logindatas[i['name']] = ''
 
 
-    def chech_login(self,res):
+    def check_login(self, res):
         if 'Quick Submit' in res:
             print('login success')
             return True
