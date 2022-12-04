@@ -4,8 +4,7 @@ from tkinter import ttk
 from tkinter.simpledialog import askstring
 import requests
 from bs4 import BeautifulSoup
-import easygui
-
+import tkinter.font as tkfont
 
 class loginApp(tk.Toplevel):
     logindatas = {}
@@ -60,7 +59,7 @@ class MianApp(tk.Tk):
     def __init__(self):
         super().__init__()
 
-        self.geometry("800x600")
+        self.geometry("1000x600")
         self.title("uva_onlinejudge_desktop_ver")
         self.problem_id_label = tk.Label(self, text="problem_id")
         self.problem_id = tk.Entry(self)
@@ -83,6 +82,12 @@ class MianApp(tk.Tk):
         self.code_label = tk.Label(self, text="Paste your code...")
         self.code_text = tk.Text(self)
         self.submit_btn = tk.Button(self, text="submit", command=self.submit)
+        self.submit_result_label = tk.Label(self, text="submit result")
+        self.submit_result_text = tk.Text(self, width=30)
+
+        font = tkfont.Font(font=self.code_text['font'])
+        tab = font.measure('    ')
+        self.code_text.config(tabs=tab)
 
         self.language_var.set('1')
         self.problem_id_label.grid(row=0, column=0)
@@ -97,6 +102,9 @@ class MianApp(tk.Tk):
         self.code_label.grid(row=7, column=0)
         self.code_text.grid(row=7, column=1, sticky="WE")
         self.submit_btn.grid(row=8, column=1)
+        self.submit_result_label.grid(row=0, column=2)
+        self.submit_result_text.grid(row=1, column=2,rowspan=7, sticky="NS")
+
 
         self.get_headers()  # initializate logindatas aka headers
         self.login()
@@ -127,6 +135,9 @@ class MianApp(tk.Tk):
         self.logindatas = logindatas
 
     def submit(self):
+        if not self.login_status:
+            print('please login first')
+            return
         if not self.problem_id.get():
             print('please input problem_id')
             return
@@ -143,11 +154,6 @@ class MianApp(tk.Tk):
         datas['language'] = self.language_var.get()
         datas['code'] = self.code_text.get(1.0, 'end')
         datas['codeupl'] = ''
-
-
-        if not self.login_status:
-            print('please login first')
-            return
 
         print(f"{datas=}")
 
