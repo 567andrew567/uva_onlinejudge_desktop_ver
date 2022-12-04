@@ -1,3 +1,4 @@
+import time
 import tkinter as tk
 from tkinter import ttk
 from tkinter.simpledialog import askstring
@@ -5,34 +6,42 @@ import requests
 from bs4 import BeautifulSoup
 import easygui
 
-class loginApp(tk.Toplevel):
 
+class loginApp(tk.Toplevel):
     logindatas = {}
 
-    def __init__(self, parent,logindatas, return_logindatas):
-        super().__init__()
+    def __init__(self, parent, logindatas, return_logindatas, return_exit):
+        super().__init__(parent)
 
         self.logindatas = logindatas
         self.return_logindatas = return_logindatas
+        self.return_exit = return_exit
 
         self.title("login")
         self.geometry("400x300")
-        self.usernameLabel = tk.Label(self, text="username")
-        self.usernameLabel.pack()
+        self.username_label = tk.Label(self, text="username")
+        self.username_label.pack()
         self.username = tk.Entry(self)
         self.username.pack()
-        self.passwordLabel = tk.Label(self, text="password")
-        self.passwordLabel.pack()
+        self.password_label = tk.Label(self, text="password")
+        self.password_label.pack()
         self.password = tk.Entry(self, show='*')
         self.password.pack()
-        self.loginBTN = tk.Button(self, text="Login", command=self.login)
-        self.loginBTN.pack()
+        self.login_btn = tk.Button(self, text="Login", command=self.login)
+        self.login_btn.pack()
+        self.exit_btn = tk.Button(self, text="Exit", command=self.exit_program)
+        self.exit_btn.pack()
 
     def login(self):
         self.logindatas['username'] = self.username.get()
         self.logindatas['passwd'] = self.password.get()
-        print(f'loginApp: {self.logindatas}')
+        # print(f'loginApp: {self.logindatas}')
         self.return_logindatas(self.logindatas)
+        self.destroy()
+
+    def exit_program(self):
+        print("exit")
+        self.return_exit()
         self.destroy()
 
 
@@ -40,27 +49,145 @@ class MianApp(tk.Tk):
     # web object
     session = requests.Session()
     logindatas = {}
+    login_status = False
+
+    # uhunt object
+    uid=''
+
+    #app object
+    exited = False
 
     def __init__(self):
         super().__init__()
-        self.geometry("400x300")
+
+        self.geometry("800x600")
         self.title("uva_onlinejudge_desktop_ver")
-        self.get_headers()
+        self.problem_id_label = tk.Label(self, text="problem_id")
+        self.problem_id = tk.Entry(self)
+
+        self.language_var = tk.StringVar()
+        self.language_label = tk.Label(self, text="language")
+        self.language1 = tk.Radiobutton(self,
+                                        text="ANSI C 5.3.0 - GNU C Compiler with options: -lm -lcrypt -O2 -pipe -ansi -DONLINE_JUDGE",
+                                        value=1, variable=self.language_var)
+        self.language2 = tk.Radiobutton(self, text="JAVA 1.8.0 - OpenJDK Java", value=2, variable=self.language_var)
+        self.language3 = tk.Radiobutton(self,
+                                        text="C++ 5.3.0 - GNU C++ Compiler with options: -lm -lcrypt -O2 -pipe -DONLINE_JUDGE",
+                                        value=3, variable=self.language_var)
+        self.language4 = tk.Radiobutton(self, text="PASCAL 3.0.0 - Free Pascal Compiler", value=4,
+                                        variable=self.language_var)
+        self.language5 = tk.Radiobutton(self,
+                                        text="C++11 5.3.0 - GNU C++ Compiler with options: -lm -lcrypt -O2 -std=c++11 -pipe -DONLINE_JUDGE",
+                                        value=5, variable=self.language_var)
+        self.language6 = tk.Radiobutton(self, text="PYTH3 3.5.1 - Python 3", value=6, variable=self.language_var)
+        self.code_label = tk.Label(self, text="Paste your code...")
+        self.code_text = tk.Text(self)
+        self.submit_btn = tk.Button(self, text="submit", command=self.submit)
+
+        self.language_var.set('1')
+        self.problem_id_label.pack()
+        self.problem_id.pack()
+        self.language_label.pack()
+        self.language1.pack()
+        self.language2.pack()
+        self.language3.pack()
+        self.language4.pack()
+        self.language5.pack()
+        self.language6.pack()
+        self.code_label.pack()
+        self.code_text.pack()
+        self.submit_btn.pack()
+
+        self.get_headers()  # initializate logindatas aka headers
         self.login()
 
     def login(self):
-        window = loginApp(self,self.logindatas, self.get_logindatas)
+        window = loginApp(self, self.logindatas, self.get_logindatas, self.set_exit)
         window.attributes('-topmost', True)
-        window.grab_set()
+        window.wait_window()
+        window.destroy()
 
-    # get logindatas and login onlinejudge
-    def get_logindatas(self,logindatas):
-        self.logindatas = logindatas
-        print(f'MianApp: {self.logindatas}')
+        if self.exited:
+            self.exit_program()
+            return
+
+        self.lift()
+        # print(f'MianApp: {self.logindatas}')
 
         url = "https://onlinejudge.org/index.php?option=com_comprofiler&task=login"
         res = self.session.post(url, data=self.logindatas)
-        self.check_login(res.text)
+
+        if not self.check_login(res.text):
+            self.login()
+        else:
+            self.get_uid()
+
+    # get logindatas and login onlinejudge
+    def get_logindatas(self, logindatas):
+        self.logindatas = logindatas
+
+    def submit(self):
+        if not self.problem_id.get():
+            print('please input problem_id')
+            return
+        if not self.code_text.get(1.0, 'end'):
+            print('please input code')
+            return
+
+        # print(self.code_text.get(1.0, 'end'))
+
+        datas = {}
+        datas['problemid'] = ''
+        datas['category'] = ''
+        datas['localid'] = self.problem_id.get()
+        datas['language'] = self.language_var.get()
+        datas['code'] = self.code_text.get(1.0, 'end')
+        datas['codeupl'] = ''
+
+
+        if not self.login_status:
+            print('please login first')
+            return
+
+        print(f"{datas=}")
+
+        subid=''
+
+        try:
+            res = self.session.post(
+                'https://onlinejudge.org/index.php?option=com_onlinejudge&Itemid=25&page=save_submission', data=datas,
+                timeout=10)
+            self.check_login(res.text)
+            res_id = res.url.split('&')[-1].split('=')[-1]
+            if res_id == 'You+have+to+input+a+problem+ID.':
+                print('submit fail')
+            else:
+                print('submit success')
+                print(res_id.split('+')[-1])
+                subid = res_id.split('+')[-1]
+        except requests.exceptions.Timeout:
+            print('timeout')
+            return
+
+        flag = True
+        while flag:
+            res = requests.get(f"https://uhunt.onlinejudge.org/api/subs-user-last/{self.uid}/{5}").json()
+            for i in res['subs']:
+                if i[0] == int(subid):
+                    if i[2] == 0:
+                        print('waiting')
+
+                    else:
+                        print(i)
+                        print('done')
+                        flag = False
+                        break
+
+    def set_exit(self):
+        self.exited = True
+
+    def exit_program(self):
+        self.destroy()
 
     # get headers
     def get_headers(self):
@@ -80,13 +207,17 @@ class MianApp(tk.Tk):
             else:
                 self.logindatas[i['name']] = ''
 
+    def get_uid(self):
+        self.uid = requests.get(f"https://uhunt.onlinejudge.org/api/uname2uid/{self.logindatas['username']}").text
 
     def check_login(self, res):
         if 'Quick Submit' in res:
             print('login success')
+            self.login_status = True
             return True
         else:
             print('login fail')
+            self.login_status = False
             return False
 
 
