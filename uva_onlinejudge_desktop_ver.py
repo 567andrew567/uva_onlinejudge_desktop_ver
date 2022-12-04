@@ -5,6 +5,8 @@ from tkinter.simpledialog import askstring
 import requests
 from bs4 import BeautifulSoup
 import tkinter.font as tkfont
+import threading
+
 
 class loginApp(tk.Toplevel):
     logindatas = {}
@@ -51,9 +53,22 @@ class MianApp(tk.Tk):
     login_status = False
 
     # uhunt object
-    uid=''
+    uid = ''
+    Verdict_ID = {10: 'Submission error',
+                  15: 'Can\'t be judged',
+                  20: 'In queue',
+                  30: 'CE',
+                  35: 'Restricted function',
+                  40: 'RE',
+                  45: 'Output limit',
+                  50: 'TLE',
+                  60: 'MLT',
+                  70: 'WA',
+                  80: 'PE',
+                  90: 'AC'
+                  }
 
-    #app object
+    # app object
     exited = False
 
     def __init__(self):
@@ -83,7 +98,7 @@ class MianApp(tk.Tk):
         self.code_text = tk.Text(self)
         self.submit_btn = tk.Button(self, text="submit", command=self.submit)
         self.submit_result_label = tk.Label(self, text="submit result")
-        self.submit_result_text = tk.Text(self, width=30)
+        self.submit_result_list = tk.Listbox(self, width=30)
 
         font = tkfont.Font(font=self.code_text['font'])
         tab = font.measure('    ')
@@ -91,8 +106,8 @@ class MianApp(tk.Tk):
 
         self.language_var.set('1')
         self.problem_id_label.grid(row=0, column=0)
-        self.problem_id.grid(row=0, column=1,sticky="WE")
-        self.language_label.grid(row=1, column=0,rowspan=6)
+        self.problem_id.grid(row=0, column=1, sticky="WE")
+        self.language_label.grid(row=1, column=0, rowspan=6)
         self.language1.grid(row=1, column=1, sticky='W')
         self.language2.grid(row=2, column=1, sticky='W')
         self.language3.grid(row=3, column=1, sticky='W')
@@ -103,8 +118,7 @@ class MianApp(tk.Tk):
         self.code_text.grid(row=7, column=1, sticky="WE")
         self.submit_btn.grid(row=8, column=1)
         self.submit_result_label.grid(row=0, column=2)
-        self.submit_result_text.grid(row=1, column=2,rowspan=7, sticky="NS")
-
+        self.submit_result_list.grid(row=1, column=2, rowspan=7, sticky="NS")
 
         self.get_headers()  # initializate logindatas aka headers
         self.login()
@@ -157,7 +171,7 @@ class MianApp(tk.Tk):
 
         print(f"{datas=}")
 
-        subid=''
+        subid = ''
 
         try:
             res = self.session.post(
@@ -175,19 +189,35 @@ class MianApp(tk.Tk):
             print('timeout')
             return
 
+        self.submit_result_list.insert(tk.END, f"{subid} wait")
+
+        self.thread_get_summit_result(subid, self.submit_result_list.size() - 1)
+
+    def thread_get_summit_result(self, subid, index):
+
+        t = threading.Thread(target=self.get_summit_result, args=(subid, index))
+        t.start()
+
+    def get_summit_result(self, subid, index):
         flag = True
+        subres = ""
         while flag:
-            res = requests.get(f"https://uhunt.onlinejudge.org/api/subs-user-last/{self.uid}/{5}").json()
-            for i in res['subs']:
+            res = requests.get(f"https://uhunt.onlinejudge.org/api/subs-user/{self.uid}/{str(int(subid) - 1)}").json()
+            for i in sorted(res['subs'], key=lambda x: x[0]):
                 if i[0] == int(subid):
                     if i[2] == 0:
                         print('waiting')
-
+                        time.sleep(5)
+                        break
                     else:
                         print(i)
                         print('done')
+                        subres = i
                         flag = False
                         break
+
+        self.submit_result_list.delete(index)
+        self.submit_result_list.insert(index, f"{subid} {self.Verdict_ID[subres[2]]}")
 
     def set_exit(self):
         self.exited = True
