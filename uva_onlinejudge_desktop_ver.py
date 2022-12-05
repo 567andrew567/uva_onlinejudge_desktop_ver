@@ -133,6 +133,15 @@ class MianApp(tk.Tk):
         self.submit_result_label.grid(row=0, column=2)
         self.submit_result_list.grid(row=1, column=2, rowspan=7, sticky="NS")
 
+        #menu
+        self.menubar = tk.Menu(self)
+        self.helpmenu = tk.Menu(self.menubar, tearoff=0)
+        self.menubar.add_cascade(label='help', menu=self.helpmenu)
+
+        self.helpmenu.add_command(label='about', command=self.about)
+
+        self.config(menu=self.menubar)
+
         self.get_headers()  # initializate logindatas aka headers
         self.login()
 
@@ -277,6 +286,8 @@ class MianApp(tk.Tk):
             self.login_status = False
             return False
 
+    def about(self):
+        messagebox.showinfo("about", "author: Andrew-Liang\ngithub:https://github.com/567andrew567/uva_onlinejudge_desktop_ver")
 
 if __name__ == "__main__":
     app = MianApp()
