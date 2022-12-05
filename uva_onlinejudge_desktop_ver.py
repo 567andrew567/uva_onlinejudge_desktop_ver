@@ -110,7 +110,7 @@ class MianApp(tk.Tk):
         self.code_text = tk.Text(self)
         self.submit_btn = tk.Button(self, text="submit", command=self.submit)
         self.submit_result_label = tk.Label(self, text="submit result")
-        self.submit_result_list = tk.Listbox(self, width=30)
+        self.submit_result_list = tk.Listbox(self, width=40)
 
         font = tkfont.Font(font=self.code_text['font'])
         tab = font.measure('    ')
@@ -157,6 +157,7 @@ class MianApp(tk.Tk):
             self.login()
         else:
             self.get_uid()
+            messagebox.showinfo("info", "login success!")
 
     # get logindatas and login onlinejudge
     def get_logindatas(self, logindatas):
