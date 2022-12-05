@@ -81,6 +81,7 @@ class MianApp(tk.Tk):
 
     # app object
     exited = False
+    insert_lock = False
 
     def __init__(self):
         super().__init__()
@@ -212,7 +213,10 @@ class MianApp(tk.Tk):
             res = self.session.post(
                 'https://onlinejudge.org/index.php?option=com_onlinejudge&Itemid=25&page=save_submission', data=datas,
                 timeout=10)
-            self.check_login(res.text)
+            if not self.check_login(res.text):
+                messagebox.showerror("error", "you are not logged in!\nplease login again")
+                self.login()
+                return
             res_id = res.url.split('&')[-1].split('=')[-1]
             if res_id == 'You+have+to+input+a+problem+ID.':
                 print('submit fail')
@@ -239,7 +243,7 @@ class MianApp(tk.Tk):
                 if i[0] == int(subid):
                     if i[2] == 0:
                         print('waiting')
-                        time.sleep(5)
+                        time.sleep(3)
                         break
                     else:
                         print(i)
@@ -248,10 +252,15 @@ class MianApp(tk.Tk):
                         flag = False
                         break
 
+        while self.insert_lock:
+            time.sleep(0.1)
+
+        self.insert_lock = True
         self.submit_result_list.delete(index)
         self.submit_result_list.insert(index,
                                        f"{subid} {problem_id} {self.Verdict_ID[subres[2]]} "
                                        f"{self.Language_ID[subres[5]]} {subres[3]/1000}ms")
+        self.insert_lock = False
 
     def set_exit(self):
         self.exited = True
