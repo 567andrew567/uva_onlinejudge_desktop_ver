@@ -137,10 +137,15 @@ class MianApp(tk.Tk):
         self.menubar = tk.Menu(self)
         self.helpmenu = tk.Menu(self.menubar, tearoff=0)
         self.menubar.add_cascade(label='help', menu=self.helpmenu)
-
         self.helpmenu.add_command(label='about', command=self.about)
-
         self.config(menu=self.menubar)
+
+        #control panel
+        self.control_panel = tk.Frame(self)
+        self.control_panel.grid(row=9, column=0, columnspan=3, sticky="WE")
+
+        self.user_label = tk.Label(self.control_panel, text="user:")
+        self.user_label.pack(side="left")
 
         self.get_headers()  # initializate logindatas aka headers
         self.login()
@@ -167,6 +172,7 @@ class MianApp(tk.Tk):
         else:
             self.get_uid()
             messagebox.showinfo("info", "login success!")
+            self.user_label.config(text=f"user: {self.logindatas['username']}")
 
     # get logindatas and login onlinejudge
     def get_logindatas(self, logindatas):
@@ -189,8 +195,6 @@ class MianApp(tk.Tk):
         if not self.code_text.get(1.0, 'end'):
             print('please input code')
             return
-
-        # print(self.code_text.get(1.0, 'end'))
 
         datas = {}
         datas['problemid'] = ''
