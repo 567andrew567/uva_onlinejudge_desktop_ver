@@ -2,6 +2,9 @@ import time
 import tkinter as tk
 from tkinter import ttk
 from tkinter.simpledialog import askstring
+from tkinter.messagebox import showinfo
+from tkinter import messagebox
+from tkinter import filedialog
 import requests
 from bs4 import BeautifulSoup
 import tkinter.font as tkfont
@@ -68,6 +71,14 @@ class MianApp(tk.Tk):
                   90: 'AC'
                   }
 
+    Language_ID = {
+        1: "ANSI C",
+        2: "Java",
+        3: "C++",
+        4: "Pascal",
+        5: "C++11"
+    }
+
     # app object
     exited = False
 
@@ -78,6 +89,7 @@ class MianApp(tk.Tk):
         self.title("uva_onlinejudge_desktop_ver")
         self.problem_id_label = tk.Label(self, text="problem_id")
         self.problem_id = tk.Entry(self)
+        self.open_file_btn = tk.Button(self, text="open file", command=self.open_file)
 
         self.language_var = tk.StringVar()
         self.language_label = tk.Label(self, text="language")
@@ -107,6 +119,7 @@ class MianApp(tk.Tk):
         self.language_var.set('1')
         self.problem_id_label.grid(row=0, column=0)
         self.problem_id.grid(row=0, column=1, sticky="WE")
+        self.open_file_btn.grid(row=0, column=1, sticky="E")
         self.language_label.grid(row=1, column=0, rowspan=6)
         self.language1.grid(row=1, column=1, sticky='W')
         self.language2.grid(row=2, column=1, sticky='W')
@@ -140,6 +153,7 @@ class MianApp(tk.Tk):
         res = self.session.post(url, data=self.logindatas)
 
         if not self.check_login(res.text):
+            messagebox.showerror("error", "login failed!\nplease check your username and password")
             self.login()
         else:
             self.get_uid()
@@ -147,6 +161,13 @@ class MianApp(tk.Tk):
     # get logindatas and login onlinejudge
     def get_logindatas(self, logindatas):
         self.logindatas = logindatas
+
+    def open_file(self):
+        file_path = filedialog.askopenfilename()
+        if file_path:
+            with open(file_path, 'r') as f:
+                self.code_text.delete(1.0, tk.END)
+                self.code_text.insert(1.0, f.read())
 
     def submit(self):
         if not self.login_status:
@@ -189,18 +210,15 @@ class MianApp(tk.Tk):
             print('timeout')
             return
 
-        self.submit_result_list.insert(tk.END, f"{subid} wait")
+        self.submit_result_list.insert(tk.END, f"{subid} {datas['localid']} wait")
 
-        self.thread_get_summit_result(subid, self.submit_result_list.size() - 1)
-
-    def thread_get_summit_result(self, subid, index):
-
-        t = threading.Thread(target=self.get_summit_result, args=(subid, index))
+        t = threading.Thread(target=self.get_summit_result,
+                             args=(subid, self.submit_result_list.size() - 1, datas['localid']))
         t.start()
 
-    def get_summit_result(self, subid, index):
+    def get_summit_result(self, subid, index, problem_id):
         flag = True
-        subres = ""
+        subres = []
         while flag:
             res = requests.get(f"https://uhunt.onlinejudge.org/api/subs-user/{self.uid}/{str(int(subid) - 1)}").json()
             for i in sorted(res['subs'], key=lambda x: x[0]):
@@ -217,7 +235,9 @@ class MianApp(tk.Tk):
                         break
 
         self.submit_result_list.delete(index)
-        self.submit_result_list.insert(index, f"{subid} {self.Verdict_ID[subres[2]]}")
+        self.submit_result_list.insert(index,
+                                       f"{subid} {problem_id} {self.Verdict_ID[subres[2]]} "
+                                       f"{self.Language_ID[subres[5]]} {subres[3]/1000}ms")
 
     def set_exit(self):
         self.exited = True
