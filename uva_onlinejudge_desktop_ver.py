@@ -272,8 +272,14 @@ class MianApp(tk.Tk):
     def get_headers(self):
         url = 'https://onlinejudge.org/'
         headers = {'user-agent': 'Mozilla/5.0'}
-        r = requests.get(url, headers=headers)
-
+        try:
+            r = requests.get(url, headers=headers, timeout=10)
+        except requests.exceptions.Timeout:
+            tk.messagebox.showerror("error", "timeout, please check your network")
+            exit(f"timeout, please check your network")
+        except requests.exceptions.ConnectionError:
+            tk.messagebox.showerror("error", "connection error, please check your network")
+            exit(f"connection error, please check your network")
         if r.status_code != 200:
             print("get_headers fail")
             exit(f"can not open {url}")
