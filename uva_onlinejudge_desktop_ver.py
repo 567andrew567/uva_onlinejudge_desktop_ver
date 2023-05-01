@@ -1,7 +1,5 @@
 import time
 import tkinter as tk
-from tkinter import ttk
-from tkinter.simpledialog import askstring
 from tkinter.messagebox import showinfo
 from tkinter import messagebox
 from tkinter import filedialog
